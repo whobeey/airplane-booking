@@ -195,7 +195,7 @@ ability = {'1': check, # calls the function check()
 # The main function of this module, it manages actions, data and it displays the main menu
 def run(): # The run() function does not take any argument or return any value when called
     global user # Global...
-    user = Client(None, None, None, None) # Register to access (1/2)
+    user = Client(None, None, None) # Register to access (1/2)
     user.register() # Register to access (2/2)
 
     while True: # Continue running the code inside the while statement unless commanded otherwise

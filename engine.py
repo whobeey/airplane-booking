@@ -1,7 +1,7 @@
 # The most functional file "engine/config/operating", also most important
 
 # Importing essential libraries for various purposes
-from random import randint # randint -> generates a random number from a given range
+from random import randint, choice # randint -> generates a random number from a given range, choice -> selects a random item stored in an index of an iterable
 
 # A dictionary to store simple messages that are available to be displayed in terminal output
 message = {"welcome": "Welcome to the Apache Airlines booking system!",
@@ -27,8 +27,25 @@ indicate = ["'F' -> Free to book",
             "'S' -> Aircraft Storage"]
 
 user_seats = {} # Dictionary that contains the seats the user has booked and location.
-user_note = "" # User's custom note
+user_note = "" # User's custom note for specific reasons and accessibilty support
+user_database = {} # The database of users for this program
 
+booking_database = {}
+booking_references = [] # A list of the booking references that are linked to a Burak Aircraft seats
+
+def generate_reference(): # This function is able to generate new and random reference numbers
+    valid_characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" # Only upper-case ENG letters and numbers 0-9 for standard practical application
+
+    while True: # Try to generate a unique reference number until possible (Retry if duplicate exists)
+        reference = "" # Set the local variable to an empty string variable before inserting characters
+
+        for i in range(8): # 0 - 7, but logically 1st to 8th character, to ensure eight characters
+            reference += choice(valid_characters) # Using the random method to select a random character to add to the string
+
+        if reference not in booking_references: # If reference number is unique, then add it to the list and return thr reference
+            booking_references.append(reference) # Adds it, if condition is met
+            return reference # Returns the Reference if the condition is met
+        
 # This function will create a table showing seating plan of the Burak 757 Aircraft, reflects later dictionary content
 def create_table(): # Only the dictionary will be changed/edited, the table created only reflects*
     seats_table = [] # The purpose of initializing is for storing seating table rows
@@ -54,10 +71,11 @@ def status(): # Check status of seats that are free or reserved or aisles or sto
 
     print("\n") # New line, to make sure output is neat in terminal
 
-    for i, indicator in enumerate(indicate, start=1): # Print list of indicators for information about the aircraft's seats
+    for i, indicator in enumerate(indicate, start = 1): # Print list of indicators for information about the aircraft's seats
         print(i, indicator) # Prints a character and what it corresponds to. 
 
 def book(): # This function will allow users to book a seat that is free 'F', replaced after booking with 'R'
+    reference_seats = [] # Seats that were booked for Reference. 
     while True: # Loop through code below until otherwise when everything goes accordingly right without user error
         seat_location = input("\n" + "Please enter the seat number (1A - 80F) or 'X' to exit: ").strip().upper() # Variable string used for booking a specific seat, it utilizes methods for clean proper neat input
 
@@ -89,8 +107,9 @@ def book(): # This function will allow users to book a seat that is free 'F', re
         if seats[row_text][column_text] == "F": # If the seat is free/'F', book only if it is valid (It is, we checked in previous lines/statements)
             seats[row_text][column_text] = "R" # Set as 'R'/Reserved
             user_seats[seat_location] = (row_text, column_text) # Add to the list of seats that the user has booked
+            reference_seats.append(seat_location) # Add to the list of seats linked to the reference number
             print(f"\nSeat {row_text}{column_text} booked successfully!") # Inform user about successful booking!
-            break # Break out of the while loop statement and back to the menu
+            print("You can book another seat on the same Aircraft!") # Offer another opportunity to book more seats
 
         else: # Using a match case inside an else statement for better readability
             match seats[row_text][column_text]: # Depending on seat's status / Anything other than 'F'/Free
@@ -150,14 +169,16 @@ def note(): # Abilty to add a note to request accessibility support from Apache 
     user_note = input("Enter a new note: ") # User enters a new note
 
 # Intializing a dictionary to call functions depending on user input
-ability = {'1': check, # calls check()
-           '2': book, # calls book()
-           '3': free, # calls free()
-           '4': status, # calls status()
-           '5': note} 
+ability = {'1': check, # calls the function check()
+           '2': book, # calls the function book()
+           '3': free, # calls the function free()
+           '4': status, # calls the function status()
+           '5': note}  # calls the function note()
 
 # The main function of this module, it manages actions, data and it displays the main menu
 def run(): # The run() function does not take any argument or return any value when called    
+    user = Client(None, None, None, None) # Register to access (1/2)
+    user.register() # Register to access (2/2)
     while True: # Continue running the code inside the while statement unless commanded otherwise
         print("\n" + "Welcome to the Apache Airlines booking system!") # Display a welcome message
 
@@ -205,7 +226,53 @@ for row in range(1, 80 + 1): # Iterating for 80. We add 1 to the argument of ran
         else: # If no condition applies, set the rest as free seats available for consumer booking
             seats[row][column] = "F"  # 'F' -> These are going to be free/unbooked seats available
 
-class Airplane: # Initializing a Class to manage demo user details and booking
-    def __init__(self, reference, surname): # Initializing object attributes
+class Client: # Initializing a Class to manage demo user details and booking
+    def __init__(self, reference, passport, name, surname): # Initializing object attributes
         self.reference = reference # "Reference" -> Reference number linked to booking
+        self.passport = passport # "Passport" -> User Passport for verification
+        self.name = name # "Firstname" -> User Name for verification
         self.surname = surname # "Surname" -> User Surname for verification
+
+    def register(self): # Method to register the user for this program
+        while True: # While true do the following, until otherwise (until condition is met)
+            self.name = input("Enter your first name: ") # Get user's firstname
+
+            if len(self.name) < 2 or len(self.name) > 14: # Check length
+                print("Invalid length, please enter a firstname 2-14 characters.") # Inform of error
+                continue # Restart the while True loop, until correct input
+
+            if any(char.isdigit() for char in self.name): # Check if the first name input has any numbers
+                print("Please enter only valid English letters and no numbers.") # Inform of error
+                continue # Restart the while True loop, until correct input
+
+            break # Exit this while loop and move on to the next one
+        
+        while True: # While true do the following, until otherwise (until condition is met)
+            self.surname = input("Enter your last name: ") # Request the user's surname for registration.
+
+            if len(self.surname) < 2 or len(self.surname) > 14: # Check if surname length in valid to be used 
+                print("Invalid length, please enter a lastname 2-14 characters.") # Inform of error
+                continue # Restart the while True loop, until correct input
+
+            if any(char.isdigit() for char in self.surname): # Check if surname input is valid
+                print("Please enter only valid English letters and no numbers.") # Inform of error
+                continue # Restart the while True loop, until correct input
+
+            break # Exit this while loop and move on to the next one
+
+        while True: # While true do the following, until otherwise (until condition is met)
+            self.passport = input("Enter your passport number (PXXXXXX) (Don't enter 'P'): ") # Get the user's passport number
+
+            if len(self.passport) != 6: # Check if the passport number is invalid, and if it is, do the following:
+                print("Invalid length, please enter a passport number of 6 characters.") # Inform of error
+                continue # Restart the while True loop, until correct input
+
+            if self.passport.isdigit() != True: # If the input wasn't a valid numbers only input, do the following and inform the user of their invalid input.
+                print("Please enter only numbers.") # Inform of error
+                continue # Restart the while True loop, until correct input
+            
+            break # Exit this while loop and move on to the next stage
+
+        
+        print(f"Your first and last name is {self.name} {self.surname} and your passport number is {self.passport}.") # Confirming details
+        print("You have registered!") # Inform of success

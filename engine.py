@@ -246,8 +246,7 @@ for row in range(1, 80 + 1): # Iterating for 80. We add 1 to the argument of ran
             seats[row][column] = "F"  # 'F' -> These are going to be free/unbooked seats available
 
 class Client: # Initializing a Class to manage demo user details and booking
-    def __init__(self, reference, passport, name, surname): # Initializing object attributes
-        self.reference = reference # "Reference" -> Reference number linked to booking
+    def __init__(self, passport, name, surname): # Initializing object attributes
         self.passport = passport # "Passport" -> User Passport for verification
         self.name = name # "Firstname" -> User Name for verification
         self.surname = surname # "Surname" -> User Surname for verification

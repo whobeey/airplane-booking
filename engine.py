@@ -28,9 +28,9 @@ indicate = ["'F' -> Free to book",
 
 user_seats = {} # Dictionary that contains the seats the user has booked and location.
 user_note = "" # User's custom note for specific reasons and accessibilty support
-user_database = {} # The database of users for this program
+user = "Place Holder for User Account" # To be overwritten with an object for user account.
 
-booking_database = {}
+booking_database = {} # A Dictionary for the purpose to store booking informatio
 booking_references = [] # A list of the booking references that are linked to a Burak Aircraft seats
 
 def generate_reference(): # This function is able to generate new and random reference numbers
@@ -45,7 +45,7 @@ def generate_reference(): # This function is able to generate new and random ref
         if reference not in booking_references: # If reference number is unique, then add it to the list and return thr reference
             booking_references.append(reference) # Adds it, if condition is met
             return reference # Returns the Reference if the condition is met
-        
+
 # This function will create a table showing seating plan of the Burak 757 Aircraft, reflects later dictionary content
 def create_table(): # Only the dictionary will be changed/edited, the table created only reflects*
     seats_table = [] # The purpose of initializing is for storing seating table rows
@@ -55,7 +55,7 @@ def create_table(): # Only the dictionary will be changed/edited, the table crea
                             seats[row]["A"], seats[row]["B"],
                             seats[row]["C"], seats[row]["X"], # Note that what will eventually be marked as 'X' will never be available, just like 'S'/storage
                             seats[row]["D"], seats[row]["E"],
-                            seats[row]["F"]]) 
+                            seats[row]["F"]])
 
     return seats_table # Returns an updated table, it should not take any argument since we are dealing with one Burak 757 aircraft at the moment
 
@@ -67,23 +67,38 @@ def status(): # Check status of seats that are free or reserved or aisles or sto
     print("\n", *table_columns, "\n")
 
     for row in seats_table: # Iterate through each created row of our seating table
-        print(f"{row[0]:02}", row[1], row[2], row[3], row[4], row[5], row[6], row[7]) # Creating/Printing the Burak 757 aircraft seating layout plan
+        display = lambda v: "R" if len(str(v)) == 8 and str(v) not in ("F", "X", "S") else v # Utilization of a Lambda function for reference
+        print(f"{row[0]:02}", display(row[1]), display(row[2]), display(row[3]), row[4], display(row[5]), display(row[6]), display(row[7])) # Creating/Printing the Burak 757 aircraft seating layout plan
 
     print("\n") # New line, to make sure output is neat in terminal
 
-    for i, indicator in enumerate(indicate, start = 1): # Print list of indicators for information about the aircraft's seats
-        print(i, indicator) # Prints a character and what it corresponds to. 
+    for i, indicator in enumerate(indicate, start=1): # Print list of indicators for information about the aircraft's seats
+        print(i, indicator) # Prints a character and what it corresponds to.
 
-def book(): # This function will allow users to book a seat that is free 'F', replaced after booking with 'R'
-    reference_seats = [] # Seats that were booked for Reference. 
+    if booking_database: # If there are any bookings...
+        print("\nBooking References:")
+        for ref, details in booking_database.items():
+            print(f"  {ref} -> Seats: {', '.join(details['seats'])}")
+
+def book(): # This function will allow users to book a seat that is free 'F', replaced after booking with reference number
+    global user # For the purpose of global access (in this program)
+    reference_seats = [] # Seats that were booked for Reference.
     while True: # Loop through code below until otherwise when everything goes accordingly right without user error
         seat_location = input("\n" + "Please enter the seat number (1A - 80F) or 'X' to exit: ").strip().upper() # Variable string used for booking a specific seat, it utilizes methods for clean proper neat input
 
         if seat_location == "X": # Check if the user wishes to exit
-            print("\n" + "Exiting booking page..." + "Returning to menu...") # Inform user about the exit process
+            if reference_seats: # If the user has booked any seats
+                ref = generate_reference() # For the purpose of generation
+                booking_database[ref] = {"passport": user.passport, "name": user.name, "surname": user.surname, "seats": reference_seats} # Method to info managing
+                for seat in reference_seats: # Iteration...
+                    r_axis, c_axis = user_seats[seat]
+                    seats[r_axis][c_axis] = ref
+                print(f"\nSeats booked: {', '.join(reference_seats)}\nYour booking reference is: {ref}") # Notify User...
+            else:
+                print("\nNo seats booked. Returning to menu...") # Notify user...
             break # Breaks out of the while loop
 
-        if len(seat_location) not in (2, 3): # If the string length of the string is less than two characters or more it is un-acceptable 
+        if len(seat_location) not in (2, 3): # If the string length of the string is less than two characters or more it is un-acceptable
             print("\n" + error["invalid"] + "\n" + " Please enter a seat number like 1A or 80F") # Inform about error
             continue # Continues the while loop / Restarts to allow the user to try again
 
@@ -122,18 +137,17 @@ def book(): # This function will allow users to book a seat that is free 'F', re
                 case _: # If the seat cannot be booked for no reason, (This condition will likely never get raised)
                     print(f"\nSeat at {row_text}{column_text} cannot be booked.") # inform...
 
-def user_booked():
+def user_booked(): # Function to display...
     print("\nYour booked seats:") # Display the user's booked seats
 
     if not user_seats: # If there aren't any seats booked by the user...
         print("No seats booked yet.") # Then inform them.
     else: # But if there are...
         for seat, (row, column) in user_seats.items(): # Display the seats booked by the user
-            print(f"{seat}") # Output the ones that are available
-
-
+            print(f"  {seat}  —  Reference: {seats[row][column]}") # Output the ones that are available
 
 def free(): # This function will allow users to free a seat that was booked, marked 'R'
+    user.verify() # Verify Identity
     while True: # Loop through code below until otherwise when everything goes accordingly right without user error
         user_booked() # Display the seats that the user has booked
         seat_location = input("\n" + "Enter a seat you booked that you wish to free or enter 'X' to exit: ").strip().upper() # Prompt user to enter, uses methods to format input
@@ -148,23 +162,26 @@ def free(): # This function will allow users to free a seat that was booked, mar
 
         row, column = user_seats[seat_location] # "Grab the location*   "
 
-        if seats[row][column] == "R": # If the seat is Reserved...
+        if seats[row][column] not in ("F", "X", "S"): # If the seat is Reserved...
+            ref = seats[row][column]
             seats[row][column] = "F" # Then free it.
             del user_seats[seat_location] # Delete from the dictionary of booked seats
-
+            if ref in booking_database: # Check and do the following if True
+                booking_database[ref]["seats"].remove(seat_location) # Removal
+                if not booking_database[ref]["seats"]: # Reverses the conditon of the statement to check ("not")
+                    del booking_database[ref] # Delete (Deletes from running Memory)
             print(f"\nSeat at {seat_location} has now been freed.") # inform...
-            break # Break...
+            continue # continue to give user another chance to free another seat.
         else: # Else...
             print(f"\nSeat at {seat_location} is not reserved.") # inforn...
 
 def check(): # Simply check status
-    status() # Show current seating plan 
+    status() # Show current seating plan
     user_booked() # Show user's booked seat
 
-
 def note(): # Abilty to add a note to request accessibility support from Apache Airlines
-    global user_note
-    print("You can add a note if you require accessibility or support.")
+    global user_note # Global Access for User Note
+    print("You can add a note if you require accessibility or support.") # Inform user.
     print("Current Note: " + user_note) # Display the user's note
     user_note = input("Enter a new note: ") # User enters a new note
 
@@ -176,9 +193,11 @@ ability = {'1': check, # calls the function check()
            '5': note}  # calls the function note()
 
 # The main function of this module, it manages actions, data and it displays the main menu
-def run(): # The run() function does not take any argument or return any value when called    
+def run(): # The run() function does not take any argument or return any value when called
+    global user # Global...
     user = Client(None, None, None, None) # Register to access (1/2)
     user.register() # Register to access (2/2)
+
     while True: # Continue running the code inside the while statement unless commanded otherwise
         print("\n" + "Welcome to the Apache Airlines booking system!") # Display a welcome message
 
@@ -191,7 +210,7 @@ def run(): # The run() function does not take any argument or return any value w
             choice = int(choice) # Try converting the user input for item choice into an integer
         except ValueError: # If it fails, then allow them to try again and inform them properly
             print("\n" + error["invalid"] + ' ' + "Please enter a number (1 - 6)") # Error and explanation
-            continue # Restarts the while loop from the beginning   
+            continue # Restarts the while loop from the beginning
 
         # If user input of chosen list item number is 1 to 6, call a function depending on the key value (abilty dictionary)
         if 1 <= choice <= len(ability): # String value must be turned to an integer in the accepted range for this if statement
@@ -199,7 +218,7 @@ def run(): # The run() function does not take any argument or return any value w
             continue # Go back to the menu, which restarts the current while loop
 
         elif choice == 6: # If 6 is inputted, then the user wishes to exit
-            print("\n" + message["goodbye"])
+            print("\n" + message["goodbye"]) # Say Goodbye
             break # Exit out of the while loop and end the program
         else: # If input is invalid, let user know and go through the while loop again
             print("\n" + error["invalid"] + ' ' + "Please enter a number (1 - 6)") # Prints error message
@@ -246,11 +265,11 @@ class Client: # Initializing a Class to manage demo user details and booking
                 continue # Restart the while True loop, until correct input
 
             break # Exit this while loop and move on to the next one
-        
+
         while True: # While true do the following, until otherwise (until condition is met)
             self.surname = input("Enter your last name: ") # Request the user's surname for registration.
 
-            if len(self.surname) < 2 or len(self.surname) > 14: # Check if surname length in valid to be used 
+            if len(self.surname) < 2 or len(self.surname) > 14: # Check if surname length in valid to be used
                 print("Invalid length, please enter a lastname 2-14 characters.") # Inform of error
                 continue # Restart the while True loop, until correct input
 
@@ -270,9 +289,27 @@ class Client: # Initializing a Class to manage demo user details and booking
             if self.passport.isdigit() != True: # If the input wasn't a valid numbers only input, do the following and inform the user of their invalid input.
                 print("Please enter only numbers.") # Inform of error
                 continue # Restart the while True loop, until correct input
-            
+
             break # Exit this while loop and move on to the next stage
 
-        
         print(f"Your first and last name is {self.name} {self.surname} and your passport number is {self.passport}.") # Confirming details
         print("You have registered!") # Inform of success
+
+    def verify(self): # Method for identity verification
+        while True: # Do the following unless otherwise
+            detail = input("Enter your surname to proceed: ") # Get input
+
+            if detail != self.surname: # If input is invalid...
+                print("Incorrect Info Inputted. Please Try Again") # If input is invalid inform user
+                continue
+
+            break # Exit and move on to the next part
+        
+        while True: # Do the following unless otherwise
+            detail = input("Enter your passport number to proceed: ") # Get input
+
+            if detail != self.passport: # If input is invalid...
+                print("Incorrect Info Inputted. Please Try Again") # If input is invalid inform user
+                continue
+
+            break # Exit and move on to the next part
